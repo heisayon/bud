@@ -1,0 +1,33 @@
+{
+  "name": "bud - AI Mood Playlist Generator",
+  "short_name": "bud",
+  "description": "Tell bud how you're feeling and get a playlist that actually gets it.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0f1a",
+  "theme_color": "#635bff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/maskable-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["music", "entertainment", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "New Playlist",
+      "short_name": "New",
+      "description": "Generate a new mood-based playlist",
+      "url": "/dashboard"
+    }
+  ]
+}
