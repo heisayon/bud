@@ -84,6 +84,7 @@ body {
   z-index: 60;
   display: grid;
   place-items: center;
+  pointer-events: none;
   background: radial-gradient(circle at top, rgba(99, 91, 255, 0.2), transparent 55%),
     var(--bg);
   animation: splash-fade-out 0.6s ease forwards;
