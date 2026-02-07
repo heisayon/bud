@@ -14,6 +14,7 @@ import {
   orderBy,
   query,
   setDoc,
+  updateDoc,
   serverTimestamp,
   where,
 } from "firebase/firestore";
@@ -37,6 +38,7 @@ type Playlist = {
   songs: Song[];
   platform: "spotify" | "youtube_music";
   createdAt?: Date;
+  rating?: number;
 };
 
 const moods = [
@@ -87,6 +89,9 @@ export default function DashboardPage() {
   const [current, setCurrent] = useState<Playlist | null>(null);
   const [history, setHistory] = useState<Playlist[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [ratingNotes, setRatingNotes] = useState("");
+  const [lastRatedId, setLastRatedId] = useState<string | null>(null);
+  const [showRatingNote, setShowRatingNote] = useState(false);
   const [preferredPlatform, setPreferredPlatform] = useState<"spotify" | "youtube_music">("spotify");
   const [spotifyConnected, setSpotifyConnected] = useState(false);
   const [youtubeConnected, setYoutubeConnected] = useState(false);
@@ -125,6 +130,12 @@ export default function DashboardPage() {
   }, [user]);
 
   useEffect(() => {
+    setShowRatingNote(false);
+    setRatingNotes("");
+    setLastRatedId(null);
+  }, [current?.id]);
+
+  useEffect(() => {
     if (!user) return;
 
     const loadPlaylists = async () => {
@@ -146,6 +157,7 @@ export default function DashboardPage() {
             songs: data.songs ?? [],
             platform: data.platform ?? "spotify",
             createdAt: data.createdAt?.toDate?.() ?? undefined,
+            rating: typeof data.rating === "number" ? data.rating : undefined,
           };
         });
         setHistory(items);
@@ -169,6 +181,7 @@ export default function DashboardPage() {
               songs: data.songs ?? [],
               platform: data.platform ?? "spotify",
               createdAt: data.createdAt?.toDate?.() ?? undefined,
+              rating: typeof data.rating === "number" ? data.rating : undefined,
             };
           })
           .sort((a, b) => {
@@ -204,7 +217,11 @@ export default function DashboardPage() {
       const response = await fetch("/api/gemini", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ moodInput: input }),
+        body: JSON.stringify({
+          moodInput: input,
+          rating: current?.rating,
+          ratingNotes: ratingNotes.trim() || undefined,
+        }),
       });
       const data = await response.json();
 
@@ -227,10 +244,7 @@ export default function DashboardPage() {
         createdAt: new Date(),
       };
 
-      setCurrent(playlist);
-      setHistory((prev) => [playlist, ...prev].slice(0, 8));
-
-      await addDoc(collection(db, "playlists"), {
+      const docRef = await addDoc(collection(db, "playlists"), {
         userId: user.uid,
         moodInput: playlist.moodInput,
         playlistName: playlist.playlistName,
@@ -239,12 +253,41 @@ export default function DashboardPage() {
         createdAt: serverTimestamp(),
         createdAtClient: Date.now(),
       });
+      const playlistWithId = { ...playlist, id: docRef.id };
+
+      setCurrent(playlistWithId);
+      setHistory((prev) => [playlistWithId, ...prev].slice(0, 8));
 
       setStatus("playlist ready.");
     } catch (error) {
       setStatus("something went wrong. try again.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const ratePlaylist = async (
+    playlist: Playlist,
+    rating: number,
+    notes?: string
+  ) => {
+    if (!user || !playlist.id) return;
+    setHistory((prev) =>
+      prev.map((item) =>
+        item.id === playlist.id ? { ...item, rating } : item
+      )
+    );
+    if (current?.id === playlist.id) {
+      setCurrent({ ...playlist, rating });
+    }
+    try {
+      await updateDoc(doc(db, "playlists", playlist.id), {
+        rating,
+        ratingNotes: notes ?? null,
+        ratedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Failed to rate playlist:", error);
     }
   };
 
@@ -485,7 +528,7 @@ export default function DashboardPage() {
                     : "hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white"
                 }`}
               >
-                {spotifyConnected ? "✓ connected" : "connect"}
+                {spotifyConnected ? "âœ“ connected" : "connect"}
               </button>
       
             </div>
@@ -500,7 +543,7 @@ export default function DashboardPage() {
                   : "hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white"
               }`}
             >
-              {youtubeConnected ? "✓ connected" : "connect"}
+              {youtubeConnected ? "âœ“ connected" : "connect"}
             </button>
           )}
           
@@ -636,7 +679,22 @@ export default function DashboardPage() {
           {/* Empty State */}
           {!current && !busy && (
             <div className="mt-8 space-y-3 py-12 text-center animate-fade-in">
-              <div className="text-4xl opacity-30">♫</div>
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[var(--border)] text-[var(--muted)]">
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  className="h-6 w-6"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+              </div>
               <p className="text-sm text-[var(--muted)]">
                 your playlist will appear here.
                 <br />
@@ -679,9 +737,69 @@ export default function DashboardPage() {
                   ? "open in youtube music"
                   : "connect youtube first"}
               </button>
-              
+
+              <div className="rounded-xl border border-[var(--border)] bg-[rgba(15,21,36,0.4)] px-4 py-3">
+  <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+    rate this playlist (optional)
+  </p>
+  <div className="mt-3 flex flex-wrap gap-2">
+    {[1, 2, 3, 4, 5].map((value) => (
+      <button
+        key={value}
+        type="button"
+        onClick={() => {
+          ratePlaylist(current, value, ratingNotes.trim() || undefined);
+          setLastRatedId(current.id ?? null);
+          setShowRatingNote(true);
+        }}
+        className={`rounded-full border border-[var(--border)] px-3 py-1.5 text-xs uppercase tracking-[0.2em] transition hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] ${
+          (current.rating ?? 0) >= value
+            ? "text-white"
+            : "text-[var(--muted)]"
+        }`}
+      >
+        <span className="flex items-center gap-1">
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            className="h-3.5 w-3.5"
+            fill="currentColor"
+          >
+            <path d="M12 17.27l5.18 3.04-1.39-5.91L20 9.24l-6.08-.52L12 3 10.08 8.72 4 9.24l4.21 5.16-1.39 5.91L12 17.27z" />
+          </svg>
+          {value}
+        </span>
+      </button>
+    ))}
+  </div>
+  {showRatingNote ? (
+    <div className="mt-3">
+      <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+        optional note
+      </label>
+      <textarea
+        rows={2}
+        value={ratingNotes}
+        onChange={(event) => setRatingNotes(event.target.value)}
+        placeholder="tell bud what was off or what you loved..."
+        className="mt-2 w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-xs text-white placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
+      />
+      {lastRatedId === current.id && current.rating ? (
+        <p className="mt-2 text-xs text-[var(--muted)]">
+          thanks for the note. we’ll use it next time.
+        </p>
+      ) : null}
+    </div>
+  ) : null}
+  <p className="mt-2 text-xs text-[var(--muted)]">
+    {current.rating
+      ? `thanks for rating ${current.rating}/5.`
+      : "your feedback helps bud learn your taste."}
+  </p>
+</div>
+
               {/* Songs List - Scrollable on mobile */}
-              <div className="max-h-[400px] space-y-3 overflow-y-auto pr-2 lg:max-h-[500px]">
+              <div className="max-h-[400px] space-y-3 overflow-y-auto pr-2 lg:max-h-[500px] playlist-scroll">
                 {current.songs.map((song, index) => (
                   <div
                     key={`${song.title}-${index}`}
@@ -747,6 +865,11 @@ export default function DashboardPage() {
                 <p className="mt-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                   {playlist.songs?.length ?? 0} songs
                 </p>
+                {playlist.rating ? (
+                  <p className="mt-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                    rated {playlist.rating}/5
+                  </p>
+                ) : null}
               </button>
             ))}
           </div>
