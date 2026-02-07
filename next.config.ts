@@ -1,21 +1,16 @@
 import type { NextConfig } from "next";
-import withPWA from "next-pwa";
+
+const isDev = process.env.NODE_ENV === "development";
+const withPWA = require("next-pwa")({
+  dest: "public",
+  disable: isDev,
+  register: true,
+  skipWaiting: true,
+  buildExcludes: [/chunks\/.*$/],
+});
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  turbopack: {},
 };
 
-const isDev = process.env.NODE_ENV === "development";
-
-const pwaConfig = withPWA({
-  ...nextConfig,
-  pwa: {
-    dest: "public",
-    disable: false,
-    register: true,
-    skipWaiting: true,
-  },
-});
-
-export default isDev ? nextConfig : pwaConfig;
+export default withPWA(nextConfig);
