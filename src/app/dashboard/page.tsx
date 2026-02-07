@@ -34,6 +34,7 @@ type Song = {
 type Playlist = {
   id?: string;
   playlistName: string;
+  vibeAnalysis?: string;
   moodInput: string;
   songs: Song[];
   platform: "spotify" | "youtube_music";
@@ -61,7 +62,7 @@ function getUserDisplay(user: { displayName: string | null; email: string | null
     .join("")
     .toUpperCase()
     .slice(0, 2);
-  
+
   // Generate consistent color from email
   const email = user.email || "bud";
   let hash = 0;
@@ -78,7 +79,7 @@ function getUserDisplay(user: { displayName: string | null; email: string | null
     "bg-indigo-600",
   ];
   const colorClass = colors[Math.abs(hash) % colors.length];
-  
+
   return { initials, colorClass };
 }
 
@@ -132,11 +133,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!showUserMenu) return;
-    const handleClick = () => {
-      setTimeout(() => setShowUserMenu(false), 0);
+
+    const handleClick = (e: MouseEvent | TouchEvent) => {
+      if (userMenuRef.current?.contains(e.target as Node)) {
+        return;
+      }
+      setShowUserMenu(false);
     };
+
     document.addEventListener("click", handleClick);
     document.addEventListener("touchend", handleClick);
+
     return () => {
       document.removeEventListener("click", handleClick);
       document.removeEventListener("touchend", handleClick);
@@ -226,7 +233,7 @@ export default function DashboardPage() {
     setBusy(true);
     setStatus(label ?? "listening to what you said...");
     setCurrent(null); // Clear current playlist during generation
-    
+
     try {
       const response = await fetch("/api/gemini", {
         method: "POST",
@@ -243,8 +250,8 @@ export default function DashboardPage() {
         typeof data?.playlistName === "string"
           ? data
           : typeof data?.raw === "string"
-          ? JSON.parse(data.raw)
-          : null;
+            ? JSON.parse(data.raw)
+            : null;
 
       if (!parsed?.playlistName || !Array.isArray(parsed?.songs)) {
         throw new Error("Invalid response");
@@ -522,13 +529,13 @@ export default function DashboardPage() {
             how are you feeling?
           </h1>
         </div>
-        
+
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Platform Badge */}
           <div className="hidden sm:block rounded-full border border-[var(--border)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
             {preferredPlatform === "spotify" ? "spotify" : "youtube"}
           </div>
-          
+
           {/* Connect Button */}
           {preferredPlatform === "spotify" ? (
             <div className="flex items-center gap-2">
@@ -536,41 +543,42 @@ export default function DashboardPage() {
                 type="button"
                 onClick={spotifyConnected ? undefined : connectSpotify}
                 disabled={spotifyConnected}
-                className={`rounded-full border border-[var(--border)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)] transition sm:px-4 ${
-                  spotifyConnected
-                    ? "cursor-default opacity-70"
-                    : "hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white"
-                }`}
+                className={`rounded-full border border-[var(--border)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)] transition sm:px-4 ${spotifyConnected
+                  ? "cursor-default opacity-70"
+                  : "hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white"
+                  }`}
               >
                 {spotifyConnected ? "connected" : "connect"}
               </button>
-      
+
             </div>
           ) : (
             <button
               type="button"
               onClick={youtubeConnected ? undefined : connectYouTube}
               disabled={youtubeConnected}
-              className={`rounded-full border border-[var(--border)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)] transition sm:px-4 ${
-                youtubeConnected
-                  ? "cursor-default opacity-70"
-                  : "hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white"
-              }`}
+              className={`rounded-full border border-[var(--border)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)] transition sm:px-4 ${youtubeConnected
+                ? "cursor-default opacity-70"
+                : "hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white"
+                }`}
             >
               {youtubeConnected ? "connected" : "connect"}
             </button>
           )}
-          
+
           {/* User Menu */}
           <div className="relative" ref={userMenuRef}>
             <button
               type="button"
-              onClick={() => setShowUserMenu(!showUserMenu)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowUserMenu(!showUserMenu);
+              }}
               className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white transition hover:scale-110 ${userDisplay?.colorClass || "bg-purple-600"}`}
             >
               {userDisplay?.initials || "B"}
             </button>
-            
+
             {showUserMenu && (
               <div className="absolute left-0 top-12 z-50 w-48 animate-fade-in rounded-xl border border-[var(--border)] bg-[var(--panel)] p-2 shadow-lg sm:left-auto sm:right-0">
                 <div className="space-y-1">
@@ -678,7 +686,7 @@ export default function DashboardPage() {
           <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted)]">
             output
           </p>
-          
+
           {/* Loading State */}
           {busy && !current && (
             <div className="mt-8 flex flex-col items-center justify-center gap-4 py-12 animate-fade-in">
@@ -689,7 +697,7 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
-          
+
           {/* Empty State */}
           {!current && !busy && (
             <div className="mt-8 space-y-3 py-12 text-center animate-fade-in">
@@ -716,22 +724,27 @@ export default function DashboardPage() {
               </p>
             </div>
           )}
-          
+
           {/* Playlist Display */}
           {current && (
             <div className="mt-4 space-y-4 animate-fade-in">
               <div className="rounded-xl border border-[var(--border)] bg-[rgba(15,21,36,0.5)] p-4">
-                <p className="text-sm font-semibold text-white">
-                  {current.playlistName}
-                </p>
-                <p className="mt-1 text-xs text-[var(--muted)]">
-                  {current.moodInput}
-                </p>
+  <p className="text-sm font-semibold text-white">
+    {current.playlistName}
+  </p>
+  {current.vibeAnalysis && (
+    <p className="mt-2 text-xs leading-relaxed text-[var(--muted)] italic">
+      "{current.vibeAnalysis}"
+    </p>
+  )}
+  <p className="mt-2 text-xs text-[var(--muted)]">
+    {current.moodInput}
+  </p>
                 <p className="mt-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                   {current.songs.length} songs
                 </p>
               </div>
-              
+
               <button
                 type="button"
                 onClick={createPlatformPlaylist}
@@ -748,69 +761,63 @@ export default function DashboardPage() {
                     ? "open in spotify"
                     : "connect spotify first"
                   : youtubeConnected
-                  ? "open in youtube music"
-                  : "connect youtube first"}
+                    ? "open in youtube music"
+                    : "connect youtube first"}
               </button>
 
-              <div className="rounded-xl border border-[var(--border)] bg-[rgba(15,21,36,0.4)] px-4 py-3">
-  <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-    rate this playlist (optional)
-  </p>
-  <div className="mt-3 flex flex-wrap gap-2">
-    {[1, 2, 3, 4, 5].map((value) => (
-      <button
-        key={value}
-        type="button"
-        onClick={() => {
-          ratePlaylist(current, value, ratingNotes.trim() || undefined);
-          setLastRatedId(current.id ?? null);
-          setShowRatingNote(true);
-        }}
-        className={`rounded-full border border-[var(--border)] px-3 py-1.5 text-xs uppercase tracking-[0.2em] transition hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] ${
-          (current.rating ?? 0) >= value
-            ? "text-white"
-            : "text-[var(--muted)]"
-        }`}
-      >
-        <span className="flex items-center gap-1">
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-            className="h-3.5 w-3.5"
-            fill="currentColor"
+              {/* Rating - Compact and Less Intrusive */}
+{current.id && (
+  <div className="mt-4 rounded-xl border border-[var(--border)] bg-[rgba(15,21,36,0.3)] p-3">
+    <div className="flex items-center justify-between gap-3">
+      <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
+        {current.rating ? `rated ${current.rating}/5` : "rate this"}
+      </p>
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => {
+              ratePlaylist(current, star);
+              setLastRatedId(current.id || null);
+            }}
+            className="group transition hover:scale-110"
           >
-            <path d="M12 17.27l5.18 3.04-1.39-5.91L20 9.24l-6.08-.52L12 3 10.08 8.72 4 9.24l4.21 5.16-1.39 5.91L12 17.27z" />
-          </svg>
-          {value}
-        </span>
-      </button>
-    ))}
-  </div>
-  {showRatingNote ? (
-    <div className="mt-3">
-      <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-        optional note
-      </label>
-      <textarea
-        rows={2}
-        value={ratingNotes}
-        onChange={(event) => setRatingNotes(event.target.value)}
-        placeholder="tell bud what was off or what you loved..."
-        className="mt-2 w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-xs text-white placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
-      />
-      {lastRatedId === current.id && current.rating ? (
-        <p className="mt-2 text-xs text-[var(--muted)]">
-          thanks for the note. we’ll use it next time.
-        </p>
-      ) : null}
+            <svg
+              className={`h-5 w-5 transition ${
+                (current.rating || 0) >= star
+                  ? "fill-[var(--accent)] text-[var(--accent)]"
+                  : "fill-none text-[var(--muted)] group-hover:fill-[var(--accent)] group-hover:text-[var(--accent)]"
+              }`}
+              stroke="currentColor"
+              strokeWidth="1.5"
+              viewBox="0 0 24 24"
+            >
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+          </button>
+        ))}
+      </div>
     </div>
-  ) : null}
-  <p className="mt-2 text-xs text-[var(--muted)]">
-    {current.rating
-      ? `thanks for rating ${current.rating}/5.`
-      : "your feedback helps bud learn your taste."}
-  </p>
-</div>
+    {/* Optional: Show note input only after rating */}
+    {current.rating && current.rating <= 3 && lastRatedId === current.id && (
+      <div className="mt-3 animate-fade-in">
+        <input
+          type="text"
+          placeholder="what didn't work? (optional)"
+          value={ratingNotes}
+          onChange={(e) => setRatingNotes(e.target.value)}
+          onBlur={() => {
+            if (ratingNotes.trim() && current.id) {
+              ratePlaylist(current, current.rating!, ratingNotes);
+            }
+          }}
+          className="w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-xs text-white placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:outline-none"
+        />
+      </div>
+    )}
+  </div>
+)}
 
               {/* Songs List - Scrollable on mobile */}
               <div className="max-h-[400px] space-y-3 overflow-y-auto pr-2 lg:max-h-[500px] playlist-scroll">
@@ -889,10 +896,14 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
-
-      {disconnectTarget ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(8,12,24,0.75)] px-4">
-          <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-2xl">
+      {disconnectTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(8,12,24,0.75)] px-4"
+          onClick={() => setDisconnectTarget(null)}
+        >
+          <div
+            className="glass w-full max-w-sm rounded-2xl p-6"
+            onClick={(e) => e.stopPropagation()}>
             <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
               confirm
             </p>
@@ -921,7 +932,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
