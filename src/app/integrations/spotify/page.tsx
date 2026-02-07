@@ -44,7 +44,7 @@ function SpotifyCallbackInner() {
       }
 
       setStatus("spotify connected. redirecting...");
-      setTimeout(() => router.push("/dashboard"), 1000);
+      setTimeout(() => router.replace("/dashboard"), 1000);
     };
 
     run().catch(() => setStatus("spotify connection failed."));

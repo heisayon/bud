@@ -44,7 +44,7 @@ function YoutubeCallbackInner() {
       }
 
       setStatus("youtube connected. redirecting...");
-      setTimeout(() => router.push("/dashboard"), 1000);
+      setTimeout(() => router.replace("/dashboard"), 1000);
     };
 
     run().catch(() => setStatus("youtube connection failed."));

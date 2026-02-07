@@ -145,8 +145,16 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="mx-auto w-full max-w-6xl px-4 pb-8 text-center text-xs uppercase tracking-[0.3em] text-[var(--muted)] sm:px-6 sm:pb-10">
-        your data stays yours. no ads. no bs.
+      <footer className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3 px-4 pb-8 text-center text-xs uppercase tracking-[0.3em] text-[var(--muted)] sm:flex-row sm:justify-between sm:gap-4 sm:px-6 sm:pb-10">
+        <span>your data stays yours. no ads. no bs.</span>
+        <div className="flex items-center gap-4">
+          <Link href="/privacy" className="transition hover:text-white">
+            privacy
+          </Link>
+          <Link href="/terms" className="transition hover:text-white">
+            terms
+          </Link>
+        </div>
       </footer>
     </div>
   );

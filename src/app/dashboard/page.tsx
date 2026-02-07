@@ -433,8 +433,13 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={connectSpotify}
-                className="rounded-full border border-[var(--border)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)] transition hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white sm:px-4"
+                onClick={spotifyConnected ? undefined : connectSpotify}
+                disabled={spotifyConnected}
+                className={`rounded-full border border-[var(--border)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)] transition sm:px-4 ${
+                  spotifyConnected
+                    ? "cursor-default opacity-70"
+                    : "hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white"
+                }`}
               >
                 {spotifyConnected ? "✓ connected" : "connect"}
               </button>
@@ -443,8 +448,13 @@ export default function DashboardPage() {
           ) : (
             <button
               type="button"
-              onClick={connectYouTube}
-              className="rounded-full border border-[var(--border)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)] transition hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white sm:px-4"
+              onClick={youtubeConnected ? undefined : connectYouTube}
+              disabled={youtubeConnected}
+              className={`rounded-full border border-[var(--border)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)] transition sm:px-4 ${
+                youtubeConnected
+                  ? "cursor-default opacity-70"
+                  : "hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white"
+              }`}
             >
               {youtubeConnected ? "✓ connected" : "connect"}
             </button>
@@ -461,7 +471,7 @@ export default function DashboardPage() {
             </button>
             
             {showUserMenu && (
-              <div className="absolute right-0 top-12 z-50 w-48 animate-fade-in rounded-xl border border-[var(--border)] bg-[var(--panel)] p-2 shadow-lg">
+              <div className="absolute left-0 top-12 z-50 w-48 animate-fade-in rounded-xl border border-[var(--border)] bg-[var(--panel)] p-2 shadow-lg sm:left-auto sm:right-0">
                 <div className="space-y-1">
                   <div className="px-3 py-2 text-xs text-[var(--muted)]">
                     {user.email}
