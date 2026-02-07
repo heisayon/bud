@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithPopup } from "firebase/auth";
@@ -17,7 +18,7 @@ export default function AuthPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (!loading && user) {
-      router.replace("/");
+      router.replace("/dashboard");
     }
   }, [user, loading, router]);
 
@@ -75,9 +76,30 @@ export default function AuthPage() {
     <div className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-8 px-4 py-12 sm:gap-10 sm:px-6 sm:py-16">
       {/* Header */}
       <header className="space-y-3 animate-fade-in sm:space-y-4">
-        <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted)]">
-          welcome to bud
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted)]">
+            welcome to bud
+          </p>
+          <Link
+            href="/"
+            className="group inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-[var(--muted)] transition hover:text-white"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              className="h-3 w-3 transition group-hover:-translate-x-0.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 12H5" />
+              <path d="M12 19l-7-7 7-7" />
+            </svg>
+            home
+          </Link>
+        </div>
         <h1 className="text-2xl font-semibold text-white sm:text-3xl lg:text-4xl">
           let's find music that gets you
         </h1>

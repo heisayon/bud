@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
@@ -430,9 +431,30 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
         <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted)]">
-            dashboard
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted)]">
+              dashboard
+            </p>
+            <Link
+              href="/"
+              className="group inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-[var(--muted)] transition hover:text-white"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                className="h-3 w-3 transition group-hover:-translate-x-0.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M19 12H5" />
+                <path d="M12 19l-7-7 7-7" />
+              </svg>
+              home
+            </Link>
+          </div>
           <h1 className="mt-1 text-2xl font-semibold text-white sm:text-3xl">
             how are you feeling?
           </h1>
