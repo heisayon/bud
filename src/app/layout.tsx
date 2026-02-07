@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
+import AppSplash from "./splash";
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body className={`${jetbrainsMono.variable} antialiased`}>
         <div className="relative min-h-screen bg-grid text-[var(--text)]">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[380px] bg-[radial-gradient(circle_at_top,rgba(99,91,255,0.18),transparent_60%)]" />
+          <AppSplash />
           <Providers>{children}</Providers>
         </div>
       </body>

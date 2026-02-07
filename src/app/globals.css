@@ -78,6 +78,65 @@ body {
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.08);
 }
 
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at top, rgba(99, 91, 255, 0.2), transparent 55%),
+    var(--bg);
+  animation: splash-fade-out 0.6s ease forwards;
+  animation-delay: 0.6s;
+}
+
+.splash-logo {
+  width: 120px;
+  height: 120px;
+  filter: drop-shadow(0 20px 40px rgba(8, 12, 24, 0.7));
+  animation: splash-pop 0.9s ease;
+}
+
+.splash-orbit {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 1px solid rgba(99, 91, 255, 0.25);
+  box-shadow: 0 0 60px rgba(99, 91, 255, 0.25);
+  animation: splash-spin 2.4s linear infinite;
+}
+
+@keyframes splash-pop {
+  0% {
+    transform: scale(0.75);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes splash-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes splash-fade-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
 /* Animations */
 @keyframes fade-in {
   from {
