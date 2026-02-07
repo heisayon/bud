@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/lib/firebase/auth-context";
 
-export default function SpotifyCallbackPage() {
+function SpotifyCallbackInner() {
   const router = useRouter();
   const params = useSearchParams();
   const { user } = useAuth();
@@ -56,5 +56,21 @@ export default function SpotifyCallbackPage() {
         <p className="text-sm text-[var(--muted)]">{status}</p>
       </div>
     </div>
+  );
+}
+
+export default function SpotifyCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto flex min-h-screen w-full max-w-2xl items-center justify-center px-6">
+          <div className="glass rounded-2xl p-8 text-center">
+            <p className="text-sm text-[var(--muted)]">connecting to spotify...</p>
+          </div>
+        </div>
+      }
+    >
+      <SpotifyCallbackInner />
+    </Suspense>
   );
 }

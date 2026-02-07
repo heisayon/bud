@@ -15,6 +15,10 @@ export const metadata: Metadata = {
     "Tell Bud how you feel and get a playlist that actually gets it. Always free.",
   themeColor: "#0b0f1a",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
