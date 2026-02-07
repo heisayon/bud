@@ -86,6 +86,7 @@ export default function DashboardPage() {
   const [moodInput, setMoodInput] = useState("");
   const [current, setCurrent] = useState<Playlist | null>(null);
   const [history, setHistory] = useState<Playlist[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [preferredPlatform, setPreferredPlatform] = useState<"spotify" | "youtube_music">("spotify");
   const [spotifyConnected, setSpotifyConnected] = useState(false);
   const [youtubeConnected, setYoutubeConnected] = useState(false);
@@ -127,6 +128,7 @@ export default function DashboardPage() {
     if (!user) return;
 
     const loadPlaylists = async () => {
+      setHistoryLoading(true);
       try {
         const q = query(
           collection(db, "playlists"),
@@ -179,6 +181,8 @@ export default function DashboardPage() {
         if (!current && items.length > 0) {
           setCurrent(items[0]);
         }
+      } finally {
+        setHistoryLoading(false);
       }
     };
 
@@ -715,7 +719,12 @@ export default function DashboardPage() {
         <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted)]">
           recent playlists
         </p>
-        {history.length === 0 ? (
+        {historyLoading ? (
+          <div className="mt-4 flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
+            <span className="spinner h-4 w-4" />
+            loading history...
+          </div>
+        ) : history.length === 0 ? (
           <p className="mt-4 text-sm text-[var(--muted)]">
             no saved playlists yet. make your first one above.
           </p>
