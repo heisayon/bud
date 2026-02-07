@@ -19,6 +19,10 @@ export default function TermsPage() {
             These terms govern your use of Bud. By using Bud, you agree to these
             terms. If you do not agree, do not use the service.
           </p>
+          <p>
+            Bud is a personal music companion. It connects to Spotify and
+            YouTube so you can turn a mood into a playlist you can listen to.
+          </p>
         </section>
 
         <section className="mt-10 space-y-4 text-sm leading-6 text-[var(--text)]/90">
@@ -30,6 +34,10 @@ export default function TermsPage() {
             like Spotify and YouTube. Those services have their own terms and
             policies that also apply.
           </p>
+          <p>
+            You grant Bud permission to create playlists and add tracks on your
+            behalf in the services you connect.
+          </p>
         </section>
 
         <section className="mt-10 space-y-4 text-sm leading-6 text-[var(--text)]/90">
@@ -38,7 +46,8 @@ export default function TermsPage() {
           </h2>
           <p>
             You are responsible for maintaining the security of your accounts
-            and any connected services.
+            and any connected services. If you believe your account has been
+            compromised, contact us immediately.
           </p>
         </section>
 
