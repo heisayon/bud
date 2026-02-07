@@ -487,9 +487,6 @@ export default function DashboardPage() {
     return (
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center justify-center px-4 sm:px-6">
         <div className="spinner" />
-        <p className="mt-4 text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
-          loading...
-        </p>
       </div>
     );
   }
