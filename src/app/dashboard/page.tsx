@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import {
@@ -98,6 +98,7 @@ export default function DashboardPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
   const [disconnectTarget, setDisconnectTarget] = useState<
     "spotify" | "youtube" | null
   >(null);
@@ -128,6 +129,19 @@ export default function DashboardPage() {
 
     loadUser().catch(() => null);
   }, [user]);
+
+  useEffect(() => {
+    if (!showUserMenu) return;
+    const handleClick = () => {
+      setTimeout(() => setShowUserMenu(false), 0);
+    };
+    document.addEventListener("click", handleClick);
+    document.addEventListener("touchend", handleClick);
+    return () => {
+      document.removeEventListener("click", handleClick);
+      document.removeEventListener("touchend", handleClick);
+    };
+  }, [showUserMenu]);
 
   useEffect(() => {
     setShowRatingNote(false);
@@ -528,7 +542,7 @@ export default function DashboardPage() {
                     : "hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white"
                 }`}
               >
-                {spotifyConnected ? "âœ“ connected" : "connect"}
+                {spotifyConnected ? "connected" : "connect"}
               </button>
       
             </div>
@@ -543,12 +557,12 @@ export default function DashboardPage() {
                   : "hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white"
               }`}
             >
-              {youtubeConnected ? "âœ“ connected" : "connect"}
+              {youtubeConnected ? "connected" : "connect"}
             </button>
           )}
           
           {/* User Menu */}
-          <div className="relative">
+          <div className="relative" ref={userMenuRef}>
             <button
               type="button"
               onClick={() => setShowUserMenu(!showUserMenu)}
