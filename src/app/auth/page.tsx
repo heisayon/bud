@@ -14,6 +14,7 @@ export default function AuthPage() {
   const [platform, setPlatform] = useState<"spotify" | "youtube_music">("spotify");
   const [status, setStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showAuthOverlay, setShowAuthOverlay] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -43,6 +44,7 @@ export default function AuthPage() {
 
   const handleGoogle = async () => {
     setIsLoading(true);
+    setShowAuthOverlay(true);
     setStatus("signing in...");
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -50,7 +52,7 @@ export default function AuthPage() {
       setStatus("redirecting...");
       router.replace("/dashboard");
     } catch (error) {
-      setStatus("sign in failed. please try again.");
+      setStatus("sign in failed.");
       setIsLoading(false);
     }
   };
@@ -74,6 +76,27 @@ export default function AuthPage() {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-8 px-4 py-12 sm:gap-10 sm:px-6 sm:py-16">
+      {showAuthOverlay ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(8,12,24,0.75)] px-4">
+          <div className="glass w-full max-w-sm rounded-2xl p-6 text-center">
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)]">
+              {isLoading ? <div className="spinner" /> : null}
+            </div>
+            <p className="mt-4 text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
+              {status ?? "signing in..."}
+            </p>
+            {!isLoading ? (
+              <button
+                type="button"
+                onClick={() => setShowAuthOverlay(false)}
+                className="mt-4 rounded-full border border-[var(--border)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)] transition hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white"
+              >
+                close
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       {/* Header */}
       <header className="space-y-3 animate-fade-in sm:space-y-4">
         <div className="flex items-center justify-between">
@@ -193,11 +216,11 @@ export default function AuthPage() {
               )}
             </button>
             
-            {status && (
+            {status && !showAuthOverlay ? (
               <p className="text-center text-xs text-[var(--muted)] animate-fade-in">
                 {status}
               </p>
-            )}
+            ) : null}
             
             <div className="rounded-xl border border-[var(--border)] bg-[rgba(15,21,36,0.4)] p-4">
               <p className="text-xs leading-relaxed text-[var(--muted)]">
