@@ -91,6 +91,9 @@ export default function DashboardPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [disconnectTarget, setDisconnectTarget] = useState<
+    "spotify" | "youtube" | null
+  >(null);
 
   const userDisplay = user ? getUserDisplay(user) : null;
 
@@ -355,7 +358,6 @@ export default function DashboardPage() {
 
   const disconnectSpotify = async () => {
     if (!user) return;
-    if (!confirm("disconnect spotify account?")) return;
     await setDoc(
       doc(db, "users", user.uid),
       {
@@ -377,7 +379,6 @@ export default function DashboardPage() {
 
   const disconnectYouTube = async () => {
     if (!user) return;
-    if (!confirm("disconnect youtube account?")) return;
     await setDoc(
       doc(db, "users", user.uid),
       {
@@ -395,6 +396,21 @@ export default function DashboardPage() {
     );
     setYoutubeConnected(false);
     setShowUserMenu(false);
+  };
+
+  const confirmDisconnect = (target: "spotify" | "youtube") => {
+    setDisconnectTarget(target);
+    setShowUserMenu(false);
+  };
+
+  const handleConfirmDisconnect = async () => {
+    if (disconnectTarget === "spotify") {
+      await disconnectSpotify();
+    }
+    if (disconnectTarget === "youtube") {
+      await disconnectYouTube();
+    }
+    setDisconnectTarget(null);
   };
 
   // Show loading screen
@@ -493,7 +509,7 @@ export default function DashboardPage() {
                   {spotifyConnected ? (
                     <button
                       type="button"
-                      onClick={disconnectSpotify}
+                      onClick={() => confirmDisconnect("spotify")}
                       className="w-full rounded-lg px-3 py-2 text-left text-sm text-white transition hover:bg-[rgba(99,91,255,0.12)]"
                     >
                       disconnect spotify
@@ -502,7 +518,7 @@ export default function DashboardPage() {
                   {youtubeConnected ? (
                     <button
                       type="button"
-                      onClick={disconnectYouTube}
+                      onClick={() => confirmDisconnect("youtube")}
                       className="w-full rounded-lg px-3 py-2 text-left text-sm text-white transition hover:bg-[rgba(99,91,255,0.12)]"
                     >
                       disconnect youtube
@@ -703,6 +719,39 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      {disconnectTarget ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(8,12,24,0.75)] px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-2xl">
+            <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
+              confirm
+            </p>
+            <h2 className="mt-2 text-lg font-semibold text-white">
+              disconnect {disconnectTarget}?
+            </h2>
+            <p className="mt-2 text-sm text-[var(--muted)]">
+              you can reconnect anytime, but we will stop creating playlists
+              for this account until you do.
+            </p>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setDisconnectTarget(null)}
+                className="rounded-full border border-[var(--border)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)] transition hover:border-[var(--accent)] hover:bg-[rgba(99,91,255,0.12)] hover:text-white"
+              >
+                cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDisconnect}
+                className="rounded-full bg-[var(--accent)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-white transition hover:bg-[var(--accent-2)]"
+              >
+                disconnect
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
