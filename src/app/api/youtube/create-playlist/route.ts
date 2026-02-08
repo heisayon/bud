@@ -58,11 +58,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const userSnap = await adminDb.collection("users").doc(uid).get();
+    const userRef = adminDb.collection("users").doc(uid);
+    const userSnap = await userRef.get();
     const youtube = userSnap.data()?.integrations?.youtube;
 
     if (!youtube?.refreshToken) {
-      return Response.json({ error: "YouTube not connected" }, { status: 400 });
+      return Response.json({ 
+        error: "youtube not connected. please reconnect from settings." 
+      }, { status: 400 });
     }
 
     const oauth2 = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
@@ -72,7 +75,27 @@ export async function POST(request: Request) {
       expiry_date: youtube.expiryDate,
     });
 
+    // ✅ FIX: Auto-refresh tokens and save them back to Firestore
+    oauth2.on('tokens', async (tokens) => {
+      console.log('🔄 YouTube tokens refreshed');
+      await userRef.set(
+        {
+          integrations: {
+            youtube: {
+              accessToken: tokens.access_token,
+              refreshToken: tokens.refresh_token ?? youtube.refreshToken,
+              expiryDate: tokens.expiry_date,
+            },
+          },
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
+    });
+
     const api = google.youtube({ version: "v3", auth: oauth2 });
+
+    console.log('📝 Creating YouTube playlist:', playlistName);
 
     const created = await api.playlists.insert({
       part: ["snippet", "status"],
@@ -87,13 +110,18 @@ export async function POST(request: Request) {
 
     const playlistId = created.data.id;
     if (!playlistId) {
+      console.error('❌ No playlist ID returned');
       return Response.json(
-        { error: "Playlist creation failed" },
+        { error: "playlist creation failed. try again." },
         { status: 500 }
       );
     }
 
+    console.log('✅ Playlist created:', playlistId);
+
     const inRequestCache = new Map<string, string>();
+    let addedCount = 0;
+    let skippedCount = 0;
 
     for (const song of songs as SongInput[]) {
       const q = normalizeQuery(song.title, song.artist);
@@ -101,6 +129,7 @@ export async function POST(request: Request) {
         inRequestCache.get(q) ?? (await getCachedVideoId(q));
 
       if (!videoId) {
+        console.log('🔍 Searching:', q);
         const search = await api.search.list({
           part: ["id"],
           q,
@@ -111,45 +140,82 @@ export async function POST(request: Request) {
         if (videoId) {
           inRequestCache.set(q, videoId);
           await setCachedVideoId(q, videoId);
+        } else {
+          console.log('❌ Not found:', q);
+          skippedCount++;
         }
       }
 
       if (!videoId) continue;
 
-      await api.playlistItems.insert({
-        part: ["snippet"],
-        requestBody: {
-          snippet: {
-            playlistId,
-            resourceId: {
-              kind: "youtube#video",
-              videoId,
+      try {
+        await api.playlistItems.insert({
+          part: ["snippet"],
+          requestBody: {
+            snippet: {
+              playlistId,
+              resourceId: {
+                kind: "youtube#video",
+                videoId,
+              },
             },
           },
-        },
-      });
+        });
+        addedCount++;
+      } catch (err) {
+        console.error('❌ Failed to add:', song.title, err);
+        skippedCount++;
+      }
 
-      // Gentle pacing to reduce rate-limit/quota spikes.
       await sleep(150);
     }
+
+    console.log(`✅ Complete: ${addedCount} added, ${skippedCount} skipped`);
 
     return Response.json({
       playlistId,
       url: `https://music.youtube.com/playlist?list=${playlistId}`,
+      songsAdded: addedCount,
+      songsSkipped: skippedCount,
+      totalSongs: songs.length,
     });
   } catch (error) {
     const apiError = error as {
       message?: string;
-      response?: { data?: { error?: { message?: string } } };
+      code?: number;
+      response?: { data?: { error?: { message?: string; code?: number } } };
     };
+    
+    console.error('❌ YouTube API Error:', {
+      message: apiError.message,
+      code: apiError.code || apiError.response?.data?.error?.code,
+    });
+
+    // Better error messages
+    let errorMsg = "playlist creation failed.";
+    const errorCode = apiError.code || apiError.response?.data?.error?.code;
+    
+    if (errorCode === 401 || errorCode === 403) {
+      errorMsg = "youtube connection expired. reconnect and try again.";
+    } else if (errorCode === 429) {
+      errorMsg = "quota limit reached. try again tomorrow.";
+    } else if (apiError.message?.includes('quota')) {
+      errorMsg = "youtube quota exceeded. try again later.";
+    }
+
     const details =
       process.env.NODE_ENV === "development"
         ? apiError.response?.data?.error?.message ??
           apiError.message ??
           String(error)
         : undefined;
+        
     return Response.json(
-      { error: "YouTube playlist creation failed", details },
+      { 
+        error: errorMsg,
+        details,
+        code: errorCode
+      },
       { status: 500 }
     );
   }

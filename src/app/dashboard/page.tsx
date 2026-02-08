@@ -367,52 +367,74 @@ export default function DashboardPage() {
   };
 
   const createPlatformPlaylist = async () => {
-    if (!user || !current) return;
-    setBusy(true);
-    setStatus("creating playlist...");
-    try {
-      const token = await user.getIdToken();
-      const endpoint =
-        preferredPlatform === "spotify"
-          ? "/api/spotify/create-playlist"
-          : "/api/youtube/create-playlist";
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          playlistName: current.playlistName,
-          songs: current.songs,
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setStatus("couldn't create playlist.");
-        return;
-      }
-      if (data?.url) {
-        window.open(data.url, "_blank", "noopener,noreferrer");
-        setStatus("playlist created!");
-      } else {
-        setStatus("created, but no link returned.");
-      }
-    } catch (error) {
-      setStatus("couldn't create playlist.");
-    } finally {
-      setBusy(false);
+  if (!user || !current) return;
+  setBusy(true);
+  setStatus("creating playlist...");
+  
+  try {
+    const token = await user.getIdToken();
+    const endpoint =
+      preferredPlatform === "spotify"
+        ? "/api/spotify/create-playlist"
+        : "/api/youtube/create-playlist";
+    
+    console.log('🎵 Creating playlist on:', preferredPlatform);
+    
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        playlistName: current.playlistName,
+        songs: current.songs,
+      }),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('❌ Failed:', data);
+      // ✅ Show the actual error in your existing status UI
+      setStatus(data.error || "couldn't create playlist.");
+      return;
     }
-  };
+    
+    console.log('✅ Success:', data);
+    
+    if (data?.url) {
+      // ✅ Show success with song count in your existing status UI
+      const added = data.songsAdded || current.songs.length;
+      const skipped = data.songsSkipped || 0;
+      
+      setStatus(
+        skipped > 0 
+          ? `playlist created! ${added} songs added, ${skipped} skipped.`
+          : `playlist created! ${added} songs added.`
+      );
+      
+      window.open(data.url, "_blank", "noopener,noreferrer");
+    } else {
+      setStatus("created, but no link returned.");
+    }
+    
+  } catch (error) {
+    console.error('❌ Network error:', error);
+    setStatus("connection failed. check internet.");
+  } finally {
+    setBusy(false);
+  }
+};
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.replace("/auth");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
+const handleLogout = async () => {
+  try {
+    await signOut(auth);
+    router.replace("/auth");
+  } catch (error) {
+    console.error("logout failed:", error);
+  }
+};
 
   const updatePlatform = async (platform: "spotify" | "youtube_music") => {
     if (!user) return;
