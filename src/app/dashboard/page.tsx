@@ -321,50 +321,96 @@ export default function DashboardPage() {
     await generatePlaylist(prompt, "finding more like this...");
   };
 
-  const connectSpotify = () => {
-    const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
-    const redirectUri = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI;
-    if (!clientId || !redirectUri) {
-      setStatus("missing spotify config. contact support.");
-      return;
+ const connectSpotify = () => {
+  const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
+  const redirectUri = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI;
+  if (!clientId || !redirectUri) {
+    setStatus("missing spotify config. contact support.");
+    return;
+  }
+  const state = crypto.randomUUID();
+  sessionStorage.setItem("spotify_state", state);
+  const scope = [
+    "playlist-modify-private",
+    "playlist-modify-public",
+    "user-read-email",
+  ].join(" ");
+  const params = new URLSearchParams({
+    client_id: clientId,
+    response_type: "code",
+    redirect_uri: redirectUri,
+    scope,
+    state,
+  });
+  
+  const authUrl = `https://accounts.spotify.com/authorize?${params.toString()}`;
+  
+  // ✅ OPEN IN POPUP WINDOW
+  const popup = window.open(
+    authUrl,
+    'Spotify Login',
+    'width=500,height=700,left=200,top=100'
+  );
+  
+  // ✅ LISTEN FOR POPUP TO CLOSE
+  const checkPopup = setInterval(() => {
+    if (popup?.closed) {
+      clearInterval(checkPopup);
+      // Refresh connection status after popup closes
+      setTimeout(async () => {
+        if (user) {
+          const snap = await getDoc(doc(db, "users", user.uid));
+          const data = snap.data();
+          setSpotifyConnected(!!data?.integrations?.spotify?.accessToken);
+        }
+      }, 1000);
     }
-    const state = crypto.randomUUID();
-    sessionStorage.setItem("spotify_state", state);
-    const scope = [
-      "playlist-modify-private",
-      "playlist-modify-public",
-      "user-read-email",
-    ].join(" ");
-    const params = new URLSearchParams({
-      client_id: clientId,
-      response_type: "code",
-      redirect_uri: redirectUri,
-      scope,
-      state,
-    });
-    window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
-  };
+  }, 500);
+};
 
-  const connectYouTube = () => {
-    const clientId = process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_ID;
-    const redirectUri = process.env.NEXT_PUBLIC_YOUTUBE_REDIRECT_URI;
-    if (!clientId || !redirectUri) {
-      setStatus("missing youtube config. contact support.");
-      return;
+const connectYouTube = () => {
+  const clientId = process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_ID;
+  const redirectUri = process.env.NEXT_PUBLIC_YOUTUBE_REDIRECT_URI;
+  if (!clientId || !redirectUri) {
+    setStatus("missing youtube config. contact support.");
+    return;
+  }
+  const state = crypto.randomUUID();
+  sessionStorage.setItem("youtube_state", state);
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: "https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl",
+    state,
+    access_type: "offline",
+    prompt: "consent",
+  });
+  
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+  
+  // ✅ OPEN IN POPUP WINDOW
+  const popup = window.open(
+    authUrl,
+    'YouTube Login',
+    'width=500,height=700,left=200,top=100'
+  );
+  
+  // ✅ LISTEN FOR POPUP TO CLOSE
+  const checkPopup = setInterval(() => {
+    if (popup?.closed) {
+      clearInterval(checkPopup);
+      // Refresh connection status after popup closes
+      setTimeout(async () => {
+        if (user) {
+          const snap = await getDoc(doc(db, "users", user.uid));
+          const data = snap.data();
+          setYoutubeConnected(!!data?.integrations?.youtube?.refreshToken);
+        }
+      }, 1000);
     }
-    const state = crypto.randomUUID();
-    sessionStorage.setItem("youtube_state", state);
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      response_type: "code",
-      access_type: "offline",
-      prompt: "consent",
-      scope: "https://www.googleapis.com/auth/youtube",
-      state,
-    });
-    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-  };
+  }, 500);
+};
 
   const createPlatformPlaylist = async () => {
   if (!user || !current) return;

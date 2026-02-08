@@ -43,8 +43,16 @@ function SpotifyCallbackInner() {
         return;
       }
 
-      setStatus("spotify connected. redirecting...");
-      setTimeout(() => router.replace("/dashboard"), 1000);
+      setStatus("spotify connected. closing...");
+      setTimeout(() => {
+        // ✅ If opened in popup, close it
+        if (window.opener && !window.opener.closed) {
+          window.close();
+        } else {
+          // If opened in full page (mobile), redirect back
+          router.replace("/dashboard");
+        }
+      }, 1000);
     };
 
     run().catch(() => setStatus("spotify connection failed."));
